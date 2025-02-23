@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from flask import Flask, request, Response, stream_with_context
 import argparse
 import io
 import logging
@@ -6,7 +7,7 @@ import wave
 from pathlib import Path
 from typing import Any, Dict
 
-from flask import Flask, request
+from flask import Flask, request, Response
 
 from . import PiperVoice
 from .download import ensure_voice_exists, find_voice, get_voices
@@ -119,6 +120,23 @@ def main() -> None:
                 voice.synthesize(text, wav_file, **synthesize_args)
 
             return wav_io.getvalue()
+
+
+
+    @app.route("/stream", methods=["POST"])
+    def stream_synthesize():
+        @stream_with_context
+        def generate_audio():
+            for chunk in request.stream:
+                text = chunk.decode("utf-8").strip()
+                if not text:
+                    continue
+                _LOGGER.debug("Synthesizing text: %s", text)
+                audio_stream = voice.synthesize_stream_raw(text, **synthesize_args)
+                for audio_bytes in audio_stream:
+                    yield audio_bytes
+
+        return Response(generate_audio(), mimetype="audio/wav")
 
     app.run(host=args.host, port=args.port)
 

@@ -20,3 +20,5 @@ htmlcov
 
 .venv/
 lightning_logs/
+fsai/onnx/en_US-lessac-high.onnx.json
+fsai/onnx/en_US-lessac-high.onnx
